@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NAct;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 namespace Paxos.test
 {
 
-    public interface IRandomStream<T> : IActor, IReadStream<T>, IWriteStream<T>
+    public interface IRandomStream<T> : IReadStream<T>, IWriteStream<T>
     {
     }
     class RandomStream<T> : IRandomStream<T>
