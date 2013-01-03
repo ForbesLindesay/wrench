@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "paxos", "paxos\paxos.csproj", "{79C9ABE0-A01B-45A2-912E-8023BF534594}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "paxos.test", "paxos.test\paxos.test.csproj", "{69DE9C2B-80E9-4853-B12F-6436F782AD81}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryStore", "MemoryStore\MemoryStore.csproj", "{46F7C05C-3FE8-4372-B048-2AE5BB253A98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryStore.Test", "MemoryStore.Test\MemoryStore.Test.csproj", "{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{79C9ABE0-A01B-45A2-912E-8023BF534594}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79C9ABE0-A01B-45A2-912E-8023BF534594}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79C9ABE0-A01B-45A2-912E-8023BF534594}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79C9ABE0-A01B-45A2-912E-8023BF534594}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69DE9C2B-80E9-4853-B12F-6436F782AD81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69DE9C2B-80E9-4853-B12F-6436F782AD81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69DE9C2B-80E9-4853-B12F-6436F782AD81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69DE9C2B-80E9-4853-B12F-6436F782AD81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46F7C05C-3FE8-4372-B048-2AE5BB253A98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46F7C05C-3FE8-4372-B048-2AE5BB253A98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46F7C05C-3FE8-4372-B048-2AE5BB253A98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46F7C05C-3FE8-4372-B048-2AE5BB253A98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
