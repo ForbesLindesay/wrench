@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,16 +18,16 @@ namespace Paxos
         private readonly int quorum;
         private readonly string address;
 
-        private readonly List<IWriteStream<NetworkMessage>> outputs = new List<IWriteStream<NetworkMessage>>();
-        private readonly Dictionary<Guid, ITaskQueue<NetworkMessage>> responses = new Dictionary<Guid, ITaskQueue<NetworkMessage>>();
-        private ITaskQueue<NetworkMessage> Broadcast(NetworkMessage message)
+        private readonly ConcurrentBag<IWriteStream<NetworkMessage>> outputs = new ConcurrentBag<IWriteStream<NetworkMessage>>();
+        private readonly ConcurrentDictionary<Guid, ITaskQueue<NetworkMessage>> responses = new ConcurrentDictionary<Guid, ITaskQueue<NetworkMessage>>();
+        private IDisposableTaskQueue<NetworkMessage> Broadcast(NetworkMessage message)
         {
-            responses[message.MessageID] = new TaskQueue<NetworkMessage>();
+            var queue = responses.GetOrAdd(message.MessageID, new TaskQueue<NetworkMessage>());
             foreach (var output in outputs)
             {
                 output.SendMessage("BROADCAST", address, message);
             }
-            return responses[message.MessageID];
+            return new DisposableTaskQueue<NetworkMessage>(queue, () => responses.TryRemove(message.MessageID, out queue));
         }
 
         public Proposer(string NetworkAddress, int Acceptors)
@@ -54,40 +54,44 @@ namespace Paxos
                         await Task.Delay(1000);
                     }
                     var SID = new SequenceNumber(highestNumber.Number + 1, address);
-                    var proposeResponse = Broadcast(NetworkMessage.Propose(SID));
-                    int agreements = 0;
-                    int disagreements = 0;
-                    while (agreements < quorum && disagreements < quorum && (disagreements + agreements) < totalAcceptors)
+                    var agreements = 0;
+                    var disagreements = 0;
+                    using (var proposeResponse = Broadcast(NetworkMessage.Propose(SID)))
                     {
-                        var message = await proposeResponse.Dequeue(TimeSpan.FromSeconds(5), cancellationToken);
-                        if (message.Type == MessageType.Agree)
+                        while (agreements < quorum && disagreements < quorum && (disagreements + agreements) < totalAcceptors)
                         {
-                            agreements++;
-                            if (message.Value != null) value = message.Value;
-                        }
-                        else if (message.Type == MessageType.Reject)
-                        {
-                            disagreements++;
-                            if (message.SequenceNumber > highestNumber) highestNumber = message.SequenceNumber;
+                            var message = await proposeResponse.Dequeue(TimeSpan.FromSeconds(5), cancellationToken);
+                            if (message.Type == MessageType.Agree)
+                            {
+                                agreements++;
+                                if (message.Value != null) value = message.Value;
+                            }
+                            else if (message.Type == MessageType.Reject)
+                            {
+                                disagreements++;
+                                if (message.SequenceNumber > highestNumber) highestNumber = message.SequenceNumber;
+                            }
                         }
                     }
 
                     if (agreements >= quorum)
                     {
-                        var commitResponse = Broadcast(NetworkMessage.Commit(SID, value));
-                        int accept = 0;
-                        int deny = 0;
-                        while (accept < quorum && deny < quorum && (accept + deny) < totalAcceptors)
+                        var accept = 0;
+                        var deny = 0;
+                        using (var commitResponse = Broadcast(NetworkMessage.Commit(SID, value)))
                         {
-                            var message = await commitResponse.Dequeue(TimeSpan.FromSeconds(5), cancellationToken);
-                            if (message.Type == MessageType.Accept)
+                            while (accept < quorum && deny < quorum && (accept + deny) < totalAcceptors)
                             {
-                                accept++;
-                            }
-                            else if (message.Type == MessageType.Deny)
-                            {
-                                deny++;
-                                if (message.SequenceNumber > highestNumber) highestNumber = message.SequenceNumber;
+                                var message = await commitResponse.Dequeue(TimeSpan.FromSeconds(5), cancellationToken);
+                                if (message.Type == MessageType.Accept)
+                                {
+                                    accept++;
+                                }
+                                else if (message.Type == MessageType.Deny)
+                                {
+                                    deny++;
+                                    if (message.SequenceNumber > highestNumber) highestNumber = message.SequenceNumber;
+                                }
                             }
                         }
                         if (accept >= quorum)
@@ -111,9 +115,10 @@ namespace Paxos
 
         public void SendMessage(string addressTo, string addressFrom, NetworkMessage message)
         {
-            if (responses.ContainsKey(message.ReplyID))
+            ITaskQueue<NetworkMessage> queue;
+            if (responses.TryGetValue(message.ReplyID, out queue))
             {
-                responses[message.ReplyID].Enqueue(message);
+                queue.Enqueue(message);
             }
         }
     }

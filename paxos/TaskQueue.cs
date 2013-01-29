@@ -81,4 +81,35 @@ namespace Paxos
             throw new TimeoutException("Dequeing an item from the TaskQueue timed out");
         }
     }
+
+    interface IDisposableTaskQueue<T> : ITaskQueue<T>, IDisposable
+    {
+    }
+
+    public sealed class DisposableTaskQueue<T> : IDisposableTaskQueue<T>
+    {
+        private readonly ITaskQueue<T> innerQueue;
+        private readonly Action dispose;
+
+        public DisposableTaskQueue(ITaskQueue<T> Queue, Action Dispose)
+        {
+            innerQueue = Queue;
+            dispose = Dispose;
+        }
+
+        public void Enqueue(T item)
+        {
+            innerQueue.Enqueue(item);
+        }
+
+        public Task<T> Dequeue(TimeSpan timeout, CancellationToken token)
+        {
+            return innerQueue.Dequeue(timeout, token);
+        }
+
+        public void Dispose()
+        {
+            dispose();
+        }
+    }
 }
