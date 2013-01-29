@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -73,6 +74,26 @@ namespace Paxos.test
             return queue.Dequeue(TimeSpan.FromSeconds(20), CancellationToken.None);
         }
     }
+    class DuplicateStream<T> : IDuplexStream<T>
+    {
+        private readonly ITaskQueue<item<T>> queue = new TaskQueue<item<T>>();
+
+        private readonly ConcurrentBag<IWriteStream<T>> listeners = new ConcurrentBag<IWriteStream<T>>();
+
+        public void SendMessage(string addressTo, string addressFrom, T message)
+        {
+            foreach (var stream in listeners)
+            {
+                stream.SendMessage(addressTo, addressFrom, message);
+                stream.SendMessage(addressTo, addressFrom, message);
+            }
+        }
+
+        public void pipe(IWriteStream<T> stream)
+        {
+            listeners.Add(stream);
+        }
+    }
 
     [TestClass]
     public class InteractionTest
@@ -93,6 +114,48 @@ namespace Paxos.test
             (await propStream.nextMessage()).Send(acceptor);
             (await accStream.nextMessage()).Send(proposer);
             Assert.AreEqual(await res, "foo");
+        }
+
+        //duplicate all messages
+        [TestMethod]
+        public async Task TestCaseB()
+        {
+            var proposerA = new Proposer("prop-A", 3);
+            var proposerB = new Proposer("prop-B", 3);
+            var acceptorA = new Acceptor();
+            var acceptorB = new Acceptor();
+            var acceptorC = new Acceptor();
+
+            var pA = proposerA.Pipe(new DuplicateStream<NetworkMessage>());
+            pA.pipe(acceptorA);
+            pA.pipe(acceptorB);
+            pA.pipe(acceptorC);
+
+            var pB = proposerA.Pipe(new DuplicateStream<NetworkMessage>());
+            pB.pipe(acceptorA);
+            pB.pipe(acceptorB);
+            pB.pipe(acceptorC);
+
+            var aA = acceptorA.Pipe(new DuplicateStream<NetworkMessage>());
+            var bA = acceptorB.Pipe(new DuplicateStream<NetworkMessage>());
+            var cA = acceptorC.Pipe(new DuplicateStream<NetworkMessage>());
+
+            aA.pipe(proposerA);
+            bA.pipe(proposerA);
+            cA.pipe(proposerA);
+
+            aA.pipe(proposerB);
+            bA.pipe(proposerB);
+            cA.pipe(proposerB);
+
+            var resAp = proposerA.Propose("foo", CancellationToken.None);
+            var resBp = proposerA.Propose("bar", CancellationToken.None);
+
+            var resA = await resAp;
+            var resB = await resBp;
+
+            Assert.AreEqual(resA, resA);
+            Assert.IsTrue(resA == "foo" || resA == "bar");
         }
         [TestMethod]
         public async Task TestRandom()
