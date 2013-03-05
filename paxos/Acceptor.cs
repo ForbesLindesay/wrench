@@ -9,46 +9,52 @@ namespace Paxos
 {
     public interface IAcceptor : IDuplexStream<NetworkMessage>
     {
-        ProposalResponse Propose(SequenceNumber sequenceNumber);
-        CommitResponse Commit(SequenceNumber sequenceNumber, string proposedValue);
+        ProposalResponse Propose(string RoundID, SequenceNumber sequenceNumber);
+        CommitResponse Commit(string RoundID, SequenceNumber sequenceNumber, string proposedValue);
     }
     public class Acceptor : IAcceptor
     {
 
         #region Acceptor
 
-        SequenceNumber agreedSequenceNumber;
-        string acceptedValue = null;
+        private readonly Dictionary<string, Round> rounds = new Dictionary<string, Round>();
+
         readonly object locker = new Object();
 
-        public ProposalResponse Propose(SequenceNumber sequenceNumber)
+        public ProposalResponse Propose(string RoundID, SequenceNumber sequenceNumber)
         {
             lock (locker)
             {
-                if (sequenceNumber > agreedSequenceNumber)
+                if (!rounds.ContainsKey(RoundID)) rounds.Add(RoundID, new Round());
+                Round round = rounds[RoundID];
+
+                if (sequenceNumber > round.AgreedSequenceNumber)
                 {
-                    agreedSequenceNumber = sequenceNumber;
-                    return ProposalResponse.Agree(acceptedValue);
+                    round.AgreedSequenceNumber = sequenceNumber;
+                    return ProposalResponse.Agree(round.AcceptedValue);
                 }
                 else
                 {
-                    return ProposalResponse.Reject(agreedSequenceNumber);
+                    return ProposalResponse.Reject(round.AgreedSequenceNumber);
                 }
             }
         }
 
-        public CommitResponse Commit(SequenceNumber sequenceNumber, string proposedValue)
+        public CommitResponse Commit(string RoundID, SequenceNumber sequenceNumber, string proposedValue)
         {
             lock (locker)
             {
-                if (sequenceNumber == agreedSequenceNumber && (acceptedValue == null || acceptedValue == proposedValue) && proposedValue != null)
+                if (!rounds.ContainsKey(RoundID)) rounds.Add(RoundID, new Round());
+                Round round = rounds[RoundID];
+
+                if (sequenceNumber == round.AgreedSequenceNumber && (round.AcceptedValue == null || round.AcceptedValue == proposedValue) && proposedValue != null)
                 {
-                    acceptedValue = proposedValue;
+                    round.AcceptedValue = proposedValue;
                     return CommitResponse.Accept();
                 }
                 else
                 {
-                    return CommitResponse.Deny(agreedSequenceNumber);
+                    return CommitResponse.Deny(round.AgreedSequenceNumber);
                 }
             }
         }
@@ -62,7 +68,7 @@ namespace Paxos
             switch (message.Type)
             {
                 case MessageType.Propose:
-                    var pResult = Propose(message.SequenceNumber);
+                    var pResult = Propose(message.RoundID, message.SequenceNumber);
                     if (pResult.IsAgreed)
                     {
                         return message.Agree(pResult.AgreedProposal);
@@ -72,7 +78,7 @@ namespace Paxos
                         return message.Reject(pResult.HighestAgreedSequenceNumber);
                     }
                 case MessageType.Commit:
-                    var cResult = Commit(message.SequenceNumber, message.Value);
+                    var cResult = Commit(message.RoundID, message.SequenceNumber, message.Value);
                     if (cResult.IsAccepted)
                     {
                         return message.Accept();

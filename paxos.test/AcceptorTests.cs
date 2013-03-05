@@ -14,13 +14,13 @@ namespace Paxos.test
         public void AcceptsFreshProposal()
         {
             var a = new Paxos.Acceptor();
-            var responseA = a.Propose(new SequenceNumber(1, "A"));
-            var responseB = a.Propose(new SequenceNumber(0, "B"));
-            var responseC = a.Propose(new SequenceNumber(2, "B"));
-            var cResponseA = a.Commit(new SequenceNumber(1, "A"), "foo");
-            var cResponseC = a.Commit(new SequenceNumber(2, "B"), "bar");
-            var responseD = a.Propose(new SequenceNumber(3, "A"));
-            var cResponseD = a.Commit(new SequenceNumber(3, "A"), "bar");
+            var responseA = a.Propose("-", new SequenceNumber(1, "A"));
+            var responseB = a.Propose("-", new SequenceNumber(0, "B"));
+            var responseC = a.Propose("-", new SequenceNumber(2, "B"));
+            var cResponseA = a.Commit("-", new SequenceNumber(1, "A"), "foo");
+            var cResponseC = a.Commit("-", new SequenceNumber(2, "B"), "bar");
+            var responseD = a.Propose("-", new SequenceNumber(3, "A"));
+            var cResponseD = a.Commit("-", new SequenceNumber(3, "A"), "bar");
 
             Assert.IsTrue(responseA.IsAgreed, "First proposal should be agreed to");
             Assert.AreEqual(null, responseA.AgreedProposal, "First proposal have null as accepted proposal");

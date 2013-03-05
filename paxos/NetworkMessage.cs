@@ -12,15 +12,18 @@ namespace Paxos
         private readonly MessageType type;
         private readonly SequenceNumber SID;
         private readonly string value;
+        private readonly string roundID;
 
         public MessageType Type { get { return type; } }
         public SequenceNumber SequenceNumber { get { return SID; } }
         public string Value { get { return value; } }
         public Guid MessageID { get { return messageID; } }
         public Guid ReplyID { get { return inResponseTo; } }
+        public string RoundID { get { return roundID; } }
 
-        private NetworkMessage(MessageType Type, SequenceNumber SequenceNo, string Value, Guid InResponseTo)
+        private NetworkMessage(string RoundID, MessageType Type, SequenceNumber SequenceNo, string Value, Guid InResponseTo)
         {
+            roundID = RoundID;
             type = Type;
             SID = SequenceNo;
             value = Value;
@@ -49,29 +52,29 @@ namespace Paxos
             return result + ") " + MessageID.ToString() + (inResponseTo == Guid.Empty ? "" : " in reply to " + inResponseTo);
         }
 
-        public static NetworkMessage Propose(SequenceNumber SequenceNumber)
+        public static NetworkMessage Propose(string RoundID, SequenceNumber SequenceNumber)
         {
-            return new NetworkMessage(MessageType.Propose, SequenceNumber, null, Guid.Empty);
+            return new NetworkMessage(RoundID, MessageType.Propose, SequenceNumber, null, Guid.Empty);
         }
         public NetworkMessage Agree(string Value)
         {
-            return new NetworkMessage(MessageType.Agree, new SequenceNumber(), Value, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Agree, new SequenceNumber(), Value, MessageID);
         }
         public NetworkMessage Reject(SequenceNumber SequenceNumber)
         {
-            return new NetworkMessage(MessageType.Reject, SequenceNumber, null, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Reject, SequenceNumber, null, MessageID);
         }
-        public static NetworkMessage Commit(SequenceNumber SequenceNumber, string Value)
+        public static NetworkMessage Commit(string RoundID, SequenceNumber SequenceNumber, string Value)
         {
-            return new NetworkMessage(MessageType.Commit, SequenceNumber, Value, Guid.Empty);
+            return new NetworkMessage(RoundID, MessageType.Commit, SequenceNumber, Value, Guid.Empty);
         }
         public NetworkMessage Accept()
         {
-            return new NetworkMessage(MessageType.Accept, new SequenceNumber(), null, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Accept, new SequenceNumber(), null, MessageID);
         }
         public NetworkMessage Deny(SequenceNumber SequenceNumber)
         {
-            return new NetworkMessage(MessageType.Deny, SequenceNumber, null, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Deny, SequenceNumber, null, MessageID);
         }
 
     }

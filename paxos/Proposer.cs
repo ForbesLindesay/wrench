@@ -10,6 +10,8 @@ namespace Paxos
     {
         Task<string> Propose(string value);
         Task<string> Propose(string value, CancellationToken cancellationToken);
+        Task<string> Propose(string RoundID, string value);
+        Task<string> Propose(string RoundID, string value, CancellationToken cancellationToken);
     }
 
     public class Proposer : IProposer
@@ -41,8 +43,20 @@ namespace Paxos
         {
             return Propose(value, CancellationToken.None);
         }
-        public async Task<string> Propose(string value, CancellationToken cancellationToken)
+        public Task<string> Propose(string value, CancellationToken cancellationToken)
         {
+            return Propose("-", value, cancellationToken);
+        }
+        public Task<string> Propose(string RoundID, string value)
+        {
+            return Propose(RoundID, value, CancellationToken.None);
+        }
+        public async Task<string> Propose(string RoundID, string value, CancellationToken cancellationToken)
+        {
+            if (RoundID == null) throw new ArgumentNullException("RoundID");
+            if (value == null) throw new ArgumentNullException("value");
+            if (cancellationToken == null) throw new ArgumentNullException("cancellationToken");
+            
             SequenceNumber highestNumber = new SequenceNumber();
 
             while (!cancellationToken.IsCancellationRequested)
@@ -56,7 +70,7 @@ namespace Paxos
                     var SID = new SequenceNumber(highestNumber.Number + 1, address);
                     var agreements = 0;
                     var disagreements = 0;
-                    using (var proposeResponse = Broadcast(NetworkMessage.Propose(SID)))
+                    using (var proposeResponse = Broadcast(NetworkMessage.Propose(RoundID, SID)))
                     {
                         while (agreements < quorum && disagreements < quorum && (disagreements + agreements) < totalAcceptors)
                         {
@@ -78,7 +92,7 @@ namespace Paxos
                     {
                         var accept = 0;
                         var deny = 0;
-                        using (var commitResponse = Broadcast(NetworkMessage.Commit(SID, value)))
+                        using (var commitResponse = Broadcast(NetworkMessage.Commit(RoundID, SID, value)))
                         {
                             while (accept < quorum && deny < quorum && (accept + deny) < totalAcceptors)
                             {

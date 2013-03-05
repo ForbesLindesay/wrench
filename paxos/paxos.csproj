@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="Acceptor.cs" />
     <Compile Include="AcceptorUtils\CommitResponse.cs" />
+    <Compile Include="AcceptorUtils\Round.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="INetwork.cs" />
     <Compile Include="IStream.cs" />
