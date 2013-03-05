@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryStore", "MemoryStore\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryStore.Test", "MemoryStore.Test\MemoryStore.Test.csproj", "{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graph-Generator", "Graph-Generator\Graph-Generator.csproj", "{F9A9AA14-819D-4566-B2C1-589A5BD34609}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
 		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{863BF5FC-E90B-4437-AFD5-59BA2B1BF1C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9A9AA14-819D-4566-B2C1-589A5BD34609}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9A9AA14-819D-4566-B2C1-589A5BD34609}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9A9AA14-819D-4566-B2C1-589A5BD34609}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9A9AA14-819D-4566-B2C1-589A5BD34609}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
