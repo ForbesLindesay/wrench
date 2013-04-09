@@ -70,7 +70,7 @@ namespace Paxos
         }
         public NetworkMessage Accept()
         {
-            return new NetworkMessage(RoundID, MessageType.Accept, new SequenceNumber(), null, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Accept, new SequenceNumber(), value, MessageID);
         }
         public NetworkMessage Deny(SequenceNumber SequenceNumber)
         {
