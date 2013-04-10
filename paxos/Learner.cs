@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 
 namespace Paxos
 {
-    class Learner:IWriteStream<NetworkMessage>
+    public class Learner:IWriteStream<NetworkMessage>
     {
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ConcurrentDictionary<string, bool>>> respones
             = new ConcurrentDictionary<string, ConcurrentDictionary<string, ConcurrentDictionary<string, bool>>>();
@@ -51,7 +51,7 @@ namespace Paxos
                 if (responses.TryAdd(addressFrom, true))
                 {
                     var count = responses.Count;
-                    if (count > Quorum)
+                    if (count >= Quorum)
                     {
                         if (results.TryAdd(message.RoundID, message.Value))
                         {
