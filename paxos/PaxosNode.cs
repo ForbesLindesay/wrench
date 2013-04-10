@@ -54,13 +54,24 @@ namespace Paxos
         {
             return proposer.Propose(Round, Value);
         }
-        
+
+
+        public bool TryGetResult(string RoundID, out string Result)
+        {
+            return learner.TryGetResult(RoundID, out Result);
+        }
+        public Task<string> GetResult(string RoundID)
+        {
+            return learner.GetResult(RoundID);
+        }
+
         public event EventHandler<RoundResult> RoundComplete
         {
             add { learner.RoundResult += value; }
             remove { learner.RoundResult -= value; }
         }
 
+        #region Networking
         public event EventHandler<string> Message;
         public void OnMessage(string Message)
         {
@@ -68,6 +79,9 @@ namespace Paxos
             var message = ser.Deserialize<TransportMessage>(Message);
             proposer.SendMessage(message.To, message.From, message.NM);
         }
+        #endregion
+
+        #region Inner Classes
         private class TransportMessage
         {
             public string To;
@@ -95,5 +109,6 @@ namespace Paxos
                 onMessage(message);
             }
         }
+        #endregion
     }
 }
