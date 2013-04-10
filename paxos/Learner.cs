@@ -44,7 +44,7 @@ namespace Paxos
 
         public void SendMessage(string addressTo, string addressFrom, NetworkMessage message)
         {
-            if (!results.ContainsKey(message.RoundID))
+            if (message.Type == MessageType.Accept && !results.ContainsKey(message.RoundID))
             {
                 var attempt = respones.GetOrAdd(message.RoundID, new ConcurrentDictionary<string, ConcurrentDictionary<string, bool>>());
                 var responses = attempt.GetOrAdd(message.Value, new ConcurrentDictionary<string, bool>());

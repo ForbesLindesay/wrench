@@ -13,7 +13,7 @@ namespace Paxos.test
         [TestMethod]
         public void AcceptsFreshProposal()
         {
-            var a = new Paxos.Acceptor();
+            var a = new Paxos.Acceptor("Address");
             var responseA = a.Propose("-", new SequenceNumber(1, "A"));
             var responseB = a.Propose("-", new SequenceNumber(0, "B"));
             var responseC = a.Propose("-", new SequenceNumber(2, "B"));

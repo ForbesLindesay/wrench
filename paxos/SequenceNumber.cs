@@ -7,35 +7,31 @@ namespace Paxos
 {
     public struct SequenceNumber : IComparable<SequenceNumber>
     {
-        private readonly UInt32 number;
-        private readonly string address;
-
+        public UInt32 Number;
+        public string Address;
         public SequenceNumber(UInt32 Number, string Address)
         {
-            number = Number;
-            address = Address;
+            this.Number = Number;
+            this.Address = Address;
         }
         public SequenceNumber(string str)
         {
             str = str.Substring(1, str.Length - 2);
-            number = UInt32.Parse(str.Substring(0, str.IndexOf(':')));
-            address = str.Substring(str.IndexOf(':') + 1);
+            this.Number = UInt32.Parse(str.Substring(0, str.IndexOf(':')));
+            this.Address = str.Substring(str.IndexOf(':') + 1);
         }
-
-        public UInt32 Number { get { return number; } }
-        public string Address { get { return address; } }
 
         #region Comparison
 
         public int CompareTo(SequenceNumber other)
         {
-            if (number.CompareTo(other.number) != 0)
+            if (Number.CompareTo(other.Number) != 0)
             {
-                return number.CompareTo(other.number);
+                return Number.CompareTo(other.Number);
             }
             else
             {
-                return address.CompareTo(other.address);
+                return Address.CompareTo(other.Address);
             }
         }
         public override bool Equals(object obj)
@@ -48,7 +44,7 @@ namespace Paxos
         }
         public override int GetHashCode()
         {
-            return number.GetHashCode() * 2 + address.GetHashCode() * 3;
+            return Number.GetHashCode() * 2 + Address.GetHashCode() * 3;
         }
 
         public static bool operator >(SequenceNumber a, SequenceNumber b)

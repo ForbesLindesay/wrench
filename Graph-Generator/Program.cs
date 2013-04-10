@@ -109,7 +109,7 @@ namespace Graph_Generator
                     }
                     for (int i = 0; i < LiveAcceptors; i++)
                     {
-                        acceptors.Add(new Acceptor());
+                        acceptors.Add(new Acceptor("Address"));
                     }
 
                     foreach (var proposer in proposers)
@@ -137,7 +137,7 @@ namespace Graph_Generator
                     {
                         var result = await res;
                         if (result != acceptedValue) throw new Exception("The proposers did not all get the same result");
-                        if (!proposedValues.Contains(result)) throw new Exception("The accepted value was never proposed");
+                        if (!proposedValues.Contains(result)) throw new Exception("The accepted Value was never proposed");
                     }
                 }
 

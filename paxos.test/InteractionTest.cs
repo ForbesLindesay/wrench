@@ -105,7 +105,7 @@ namespace Paxos.test
         {
             var proposer = new Proposer("prop-A", 1);
             var propStream = proposer.Pipe(new ManualStream<NetworkMessage>());
-            var acceptor = new Acceptor();
+            var acceptor = new Acceptor("Address");
             var accStream = acceptor.Pipe(new ManualStream<NetworkMessage>());
             var res = proposer.Propose("foo", CancellationToken.None);
             await propStream.nextMessage();
@@ -122,9 +122,9 @@ namespace Paxos.test
         {
             var proposerA = new Proposer("prop-A", 3);
             var proposerB = new Proposer("prop-B", 3);
-            var acceptorA = new Acceptor();
-            var acceptorB = new Acceptor();
-            var acceptorC = new Acceptor();
+            var acceptorA = new Acceptor("acc-A");
+            var acceptorB = new Acceptor("acc-B");
+            var acceptorC = new Acceptor("acc-C");
 
             var pA = proposerA.Pipe(new DuplicateStream<NetworkMessage>());
             pA.pipe(acceptorA);
@@ -182,7 +182,7 @@ namespace Paxos.test
 
         private async Task TestInteraction(int Proposers, int Acceptors, Random rng)
         {
-            List<Acceptor> acceptors = Enumerable.Range(0, Acceptors).Select((i) => new Acceptor()).ToList();
+            List<Acceptor> acceptors = Enumerable.Range(0, Acceptors).Select((i) => new Acceptor(Guid.NewGuid().ToString())).ToList();
             List<Proposer> proposers = Enumerable.Range(0, Proposers).Select((i) => new Proposer(Guid.NewGuid().ToString(), Acceptors)).ToList();
             foreach (var acceptor in acceptors)
             {

@@ -14,6 +14,12 @@ namespace Paxos
     }
     public class Acceptor : IAcceptor
     {
+        private readonly string address;
+
+        public Acceptor(string Address)
+        {
+            address = Address;
+        }
 
         #region Acceptor
 
@@ -101,7 +107,7 @@ namespace Paxos
         {
             foreach (var output in outputs)
             {
-                output.SendMessage(addressTo, "", message);
+                output.SendMessage(addressTo, address, message);
             }
         }
 

@@ -32,7 +32,7 @@ namespace Paxos
             numberOfNodes = NumberOfNodes;
 
             proposer = new Proposer(Address, NumberOfNodes);
-            acceptor = new Acceptor();
+            acceptor = new Acceptor(Address);
             learner = new Learner(NumberOfNodes);
             proposer.Pipe(acceptor).Pipe(proposer);
             acceptor.Pipe(learner);
@@ -78,6 +78,8 @@ namespace Paxos
             var ser = new JavaScriptSerializer();
             var message = ser.Deserialize<TransportMessage>(Message);
             proposer.SendMessage(message.To, message.From, message.NM);
+            acceptor.SendMessage(message.To, message.From, message.NM);
+            learner.SendMessage(message.To, message.From, message.NM);
         }
         #endregion
 

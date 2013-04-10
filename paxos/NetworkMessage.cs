@@ -7,49 +7,48 @@ namespace Paxos
 {
     public class NetworkMessage
     {
-        private readonly Guid messageID = Guid.NewGuid();
-        private readonly Guid inResponseTo;
-        private readonly MessageType type;
-        private readonly SequenceNumber SID;
-        private readonly string value;
-        private readonly string roundID;
+        //public for serialization
 
-        public MessageType Type { get { return type; } }
-        public SequenceNumber SequenceNumber { get { return SID; } }
-        public string Value { get { return value; } }
-        public Guid MessageID { get { return messageID; } }
-        public Guid ReplyID { get { return inResponseTo; } }
-        public string RoundID { get { return roundID; } }
+        public Guid MessageID = Guid.NewGuid();
+        public Guid ReplyID;
+        public MessageType Type;
+        public SequenceNumber SequenceNumber;
+        public string Value;
+        public string RoundID;
 
+
+        public NetworkMessage()
+        {
+        }
         private NetworkMessage(string RoundID, MessageType Type, SequenceNumber SequenceNo, string Value, Guid InResponseTo)
         {
-            roundID = RoundID;
-            type = Type;
-            SID = SequenceNo;
-            value = Value;
-            inResponseTo = InResponseTo;
+            this.RoundID = RoundID;
+            this.Type = Type;
+            this.SequenceNumber = SequenceNo;
+            this.Value = Value;
+            ReplyID = InResponseTo;
         }
         public override string ToString()
         {
-            var result = type.ToString() + "(";
+            var result = Type.ToString() + "(";
 
-            string valueStr = value != null ? "'" + value + "'" : "NULL";
-            switch (type)
+            string valueStr = Value != null ? "'" + Value + "'" : "NULL";
+            switch (Type)
             {
                 case MessageType.Propose:
                 case MessageType.Reject:
                 case MessageType.Deny:
-                    result += SID.ToString();
+                    result += SequenceNumber.ToString();
                     break;
                 case MessageType.Agree:
                     result += valueStr;
                     break;
                 case MessageType.Commit:
-                    result += SID.ToString() + ", " + valueStr;
+                    result += SequenceNumber.ToString() + ", " + valueStr;
                     break;
             }
 
-            return result + ") " + MessageID.ToString() + (inResponseTo == Guid.Empty ? "" : " in reply to " + inResponseTo);
+            return result + ") " + MessageID.ToString() + (ReplyID == Guid.Empty ? "" : " in reply to " + ReplyID);
         }
 
         public static NetworkMessage Propose(string RoundID, SequenceNumber SequenceNumber)
@@ -70,7 +69,7 @@ namespace Paxos
         }
         public NetworkMessage Accept()
         {
-            return new NetworkMessage(RoundID, MessageType.Accept, new SequenceNumber(), value, MessageID);
+            return new NetworkMessage(RoundID, MessageType.Accept, new SequenceNumber(), Value, MessageID);
         }
         public NetworkMessage Deny(SequenceNumber SequenceNumber)
         {

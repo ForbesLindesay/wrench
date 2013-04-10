@@ -59,6 +59,7 @@
     <Compile Include="AcceptorTests.cs" />
     <Compile Include="InteractionTest.cs" />
     <Compile Include="LearnerTest.cs" />
+    <Compile Include="PaxosNodeTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SequenceNumberTests.cs" />
   </ItemGroup>
