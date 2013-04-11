@@ -11,7 +11,7 @@ namespace Paxos.test
     public class PaxosNodeTest
     {
         [TestMethod]
-        public async Task TestPaxosNode()
+        public async Task PaxosNodesPassResults()
         {
             var A = new PaxosNode("A", 3);
             var B = new PaxosNode("B", 3);
