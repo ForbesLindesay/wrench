@@ -33,24 +33,44 @@ namespace MasterElection
         {
             return node.TryGetResult(LeaseID, out Address);
         }
-        public bool TryGetMaster(out string Address)
+        private DateTime GetStartTime(DateTime now)
         {
-            var now = DateTime.UtcNow;
             var lower = now - new TimeSpan(DriftRange.Ticks / 2L);
-            var upper = lower + DriftRange;
-
             var start = new DateTime(lower.Year, lower.Month, lower.Day, lower.Hour, 0, 0, DateTimeKind.Utc);
             while (start < lower)
             {
                 start = start.AddMinutes(LeaseSpanMinutes);
             }
+            return start;
+        }
+        private DateTime GetEndTime(DateTime now)
+        {
+            var upper = now + new TimeSpan(DriftRange.Ticks / 2L);
             var end = (new DateTime(upper.Year, upper.Month, upper.Day, upper.Hour, 0, 0, DateTimeKind.Utc)).AddHours(1);
             while (end > upper)
             {
                 end = end.AddMinutes(-LeaseSpanMinutes);
             }
-            var startID = start.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
-            var endID = end.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
+            return end;
+        }
+        private string GetStartID(DateTime now)
+        {
+            return GetStartTime(now).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
+        }
+        private string GetNextID(DateTime now)
+        {
+            return GetStartTime(now).AddMinutes(LeaseSpanMinutes).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
+        }
+        private string GetEndID(DateTime now)
+        {
+            return GetEndTime(now).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
+        }
+        public bool TryGetMaster(out string Address)
+        {
+            var now = DateTime.UtcNow;
+            var startID = GetStartID(now);
+            var endID = GetEndID(now);
+
             if (startID == endID) return TryGetMaster(startID, out Address);
             string before;
             string after;
@@ -66,6 +86,44 @@ namespace MasterElection
             return false;
         }
 
+        private async Task<bool> TryReElect()
+        {
+            var now = DateTime.UtcNow;
+            string master;
+            if (TryGetMaster(GetStartID(now), out master) && master == Address)
+            {
+                return Address == await node.Propose(GetNextID(now), Address);
+            }
+            return false;
+        }
+        private async void KeepElected()
+        {
+            while (await TryReElect())
+            {
+                var now = DateTime.UtcNow;
+                var ts = GetStartTime(now).AddMinutes(LeaseSpanMinutes) - now;
+                if (ts.Ticks > 0)
+                {
+                    await Task.Delay(ts);
+                }
+            }
+        }
+
+        private async Task<bool> TryElect()
+        {
+            var now = DateTime.UtcNow;
+            if (Address == await node.Propose(GetStartID(now), Address))
+            {
+                string master;
+                KeepElected();
+                if (TryGetMaster(out master))
+                {
+                    return master == Address;
+                }
+            }
+            return false;
+        }
+
         public event EventHandler<string> Message
         {
             add { node.Message += value; }
@@ -77,7 +135,7 @@ namespace MasterElection
         }
 
 
-        public static bool IsDivisble(int x, int n)
+        private static bool IsDivisble(int x, int n)
         {
             return (x % n) == 0;
         }
