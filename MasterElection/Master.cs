@@ -16,6 +16,9 @@ namespace MasterElection
         public readonly TimeSpan DriftRange;
         public readonly int LeaseSpanMinutes;
 
+        //Can be set to `false` for testing purposes
+        public bool Connected = true;
+
         public Master(string Address, int NumberOfNodes, TimeSpan DriftRange, int LeaseSpanMinutes)
         {
             if (LeaseSpanMinutes > 60)
@@ -165,7 +168,7 @@ namespace MasterElection
         }
         public void OnMessage(string Message)
         {
-            node.OnMessage(Message);
+            if (Connected) node.OnMessage(Message);
         }
 
 

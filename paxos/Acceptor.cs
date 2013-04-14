@@ -98,8 +98,9 @@ namespace Paxos
             }
         }
 
-        public void SendMessage(string addressTo, string addressFrom, NetworkMessage message)
+        public async void SendMessage(string addressTo, string addressFrom, NetworkMessage message)
         {
+            await Task.Yield();//prevent stack overflow
             var response = Handle(message);
             if (response != null) SendReply(addressFrom, response);
         }
