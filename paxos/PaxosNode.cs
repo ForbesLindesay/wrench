@@ -26,6 +26,7 @@ namespace Paxos
                 numberOfNodes = value;
             }
         }
+        public string Address { get { return address; } }
         public PaxosNode(string Address, int NumberOfNodes)
         {
             address = Address;

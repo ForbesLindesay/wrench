@@ -10,7 +10,7 @@ namespace MasterElection
     public class Master
     {
         private readonly PaxosNode node;
-        public readonly string Address;
+        public string Address { get { return node.Address; } }
         public int NumberOfNodes { get { return node.NumberOfNodes; } set { node.NumberOfNodes = value; } }
 
         public readonly TimeSpan DriftRange;
@@ -19,8 +19,9 @@ namespace MasterElection
         //Can be set to `false` for testing purposes
         public bool Connected = true;
 
-        public Master(string Address, int NumberOfNodes, TimeSpan DriftRange, TimeSpan LeaseSpan)
+        public Master(PaxosNode Node, TimeSpan DriftRange, TimeSpan LeaseSpan)
         {
+            node = Node;
             if (LeaseSpan > TimeSpan.FromMinutes(1))
                 throw new ArgumentOutOfRangeException("LeaseSpan", LeaseSpan, "LeaseSpan must be less than 60 minutes");
             LeaseSpanSeconds = (int)Math.Floor(LeaseSpan.TotalSeconds);
@@ -28,10 +29,12 @@ namespace MasterElection
                 throw new ArgumentException("LeaseSpan must divide exactly into an hour", "LeaseSpan");
             if (DriftRange > LeaseSpan)
                 throw new ArgumentOutOfRangeException("DriftRange", DriftRange, "DriftRange can't be more than the LeaseSpan");
-            node = new PaxosNode(Address, NumberOfNodes);
-            this.Address = Address;
-            this.NumberOfNodes = NumberOfNodes;
             this.DriftRange = DriftRange;
+        }
+
+        public Master(string Address, int NumberOfNodes, TimeSpan DriftRange, TimeSpan LeaseSpan)
+            :this(new PaxosNode(Address, NumberOfNodes), DriftRange, LeaseSpan)
+        {
         }
 
         private Task<string> GetMaster(string LeaseID)
