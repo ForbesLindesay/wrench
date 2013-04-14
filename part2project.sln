@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graph-Generator", "Graph-Ge
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MasterElection", "MasterElection\MasterElection.csproj", "{CF8117E9-63B2-4D53-B0B1-DFB84783B635}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MasterElection.Test", "MasterElection.Test\MasterElection.Test.csproj", "{A16899C1-82EA-42A9-AADB-40B7802F8749}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{CF8117E9-63B2-4D53-B0B1-DFB84783B635}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF8117E9-63B2-4D53-B0B1-DFB84783B635}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF8117E9-63B2-4D53-B0B1-DFB84783B635}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A16899C1-82EA-42A9-AADB-40B7802F8749}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A16899C1-82EA-42A9-AADB-40B7802F8749}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A16899C1-82EA-42A9-AADB-40B7802F8749}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A16899C1-82EA-42A9-AADB-40B7802F8749}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MasterElection
 {
-    class Master
+    public class Master
     {
         private readonly PaxosNode node;
         public readonly string Address;
@@ -22,14 +22,20 @@ namespace MasterElection
                 throw new ArgumentOutOfRangeException("LeaseSpanMinutes", LeaseSpanMinutes, "LeaseSpan must be less than 60 minutes");
             if (!IsDivisble(LeaseSpanMinutes, 60))
                 throw new ArgumentException("LeaseSpan must divide exactly into an hour", "LeaseSpanMinutes");
+            if (DriftRange.TotalMinutes > LeaseSpanMinutes)
+                throw new ArgumentOutOfRangeException("DriftRange", DriftRange, "DriftRange can't be more than the LeaseSpan");
+            node = new PaxosNode(Address, NumberOfNodes);
             this.Address = Address;
             this.NumberOfNodes = NumberOfNodes;
             this.DriftRange = DriftRange;
             this.LeaseSpanMinutes = LeaseSpanMinutes;
-            node = new PaxosNode(Address, NumberOfNodes);
         }
 
-        public bool TryGetMaster(string LeaseID, out string Address)
+        private Task<string> GetMaster(string LeaseID)
+        {
+            return node.GetResult(LeaseID);
+        }
+        private bool TryGetMaster(string LeaseID, out string Address)
         {
             return node.TryGetResult(LeaseID, out Address);
         }
@@ -82,10 +88,38 @@ namespace MasterElection
                     return true;
                 }
             }
+            else
+            {
+                TryElect();
+            }
             Address = "";
             return false;
         }
-
+        public async Task<string> GetMaster()
+        {
+            string master;
+            while (!TryGetMaster(out master))
+            {
+                if (!TryGetMaster(GetStartID(DateTime.UtcNow), out master))
+                {
+                    await TryElect();
+                }
+                else
+                {
+                    var now = DateTime.UtcNow;
+                    var ts = GetEndTime(now) - now;
+                    if (ts.Ticks > 0)
+                    {
+                        await Task.Delay(ts);
+                    }
+                    else
+                    {
+                        await Task.Yield();
+                    }
+                }
+            }
+            return master;
+        }
         private async Task<bool> TryReElect()
         {
             var now = DateTime.UtcNow;
@@ -137,7 +171,7 @@ namespace MasterElection
 
         private static bool IsDivisble(int x, int n)
         {
-            return (x % n) == 0;
+            return (n % x) == 0;
         }
     }
 }
