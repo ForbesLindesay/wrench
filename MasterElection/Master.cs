@@ -14,24 +14,24 @@ namespace MasterElection
         public int NumberOfNodes { get { return node.NumberOfNodes; } set { node.NumberOfNodes = value; } }
 
         public readonly TimeSpan DriftRange;
-        public readonly int LeaseSpanMinutes;
+        public readonly int LeaseSpanSeconds;
 
         //Can be set to `false` for testing purposes
         public bool Connected = true;
 
-        public Master(string Address, int NumberOfNodes, TimeSpan DriftRange, int LeaseSpanMinutes)
+        public Master(string Address, int NumberOfNodes, TimeSpan DriftRange, TimeSpan LeaseSpan)
         {
-            if (LeaseSpanMinutes > 60)
-                throw new ArgumentOutOfRangeException("LeaseSpanMinutes", LeaseSpanMinutes, "LeaseSpan must be less than 60 minutes");
-            if (!IsDivisble(LeaseSpanMinutes, 60))
-                throw new ArgumentException("LeaseSpan must divide exactly into an hour", "LeaseSpanMinutes");
-            if (DriftRange.TotalMinutes > LeaseSpanMinutes)
+            if (LeaseSpan > TimeSpan.FromMinutes(1))
+                throw new ArgumentOutOfRangeException("LeaseSpan", LeaseSpan, "LeaseSpan must be less than 60 minutes");
+            LeaseSpanSeconds = (int)Math.Floor(LeaseSpan.TotalSeconds);
+            if (!IsDivisble(LeaseSpanSeconds, 60 * 60))
+                throw new ArgumentException("LeaseSpan must divide exactly into an hour", "LeaseSpan");
+            if (DriftRange > LeaseSpan)
                 throw new ArgumentOutOfRangeException("DriftRange", DriftRange, "DriftRange can't be more than the LeaseSpan");
             node = new PaxosNode(Address, NumberOfNodes);
             this.Address = Address;
             this.NumberOfNodes = NumberOfNodes;
             this.DriftRange = DriftRange;
-            this.LeaseSpanMinutes = LeaseSpanMinutes;
         }
 
         private Task<string> GetMaster(string LeaseID)
@@ -48,7 +48,7 @@ namespace MasterElection
             var start = new DateTime(lower.Year, lower.Month, lower.Day, lower.Hour, 0, 0, DateTimeKind.Utc);
             while (start < lower)
             {
-                start = start.AddMinutes(LeaseSpanMinutes);
+                start = start.AddSeconds(LeaseSpanSeconds);
             }
             return start;
         }
@@ -58,7 +58,7 @@ namespace MasterElection
             var end = (new DateTime(upper.Year, upper.Month, upper.Day, upper.Hour, 0, 0, DateTimeKind.Utc)).AddHours(1);
             while (end > upper)
             {
-                end = end.AddMinutes(-LeaseSpanMinutes);
+                end = end.AddSeconds(-LeaseSpanSeconds);
             }
             return end;
         }
@@ -68,7 +68,7 @@ namespace MasterElection
         }
         private string GetNextID(DateTime now)
         {
-            return GetStartTime(now).AddMinutes(LeaseSpanMinutes).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
+            return GetStartTime(now).AddSeconds(LeaseSpanSeconds).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssK");
         }
         private string GetEndID(DateTime now)
         {
@@ -138,7 +138,7 @@ namespace MasterElection
             while (await TryReElect())
             {
                 var now = DateTime.UtcNow;
-                var ts = GetStartTime(now).AddMinutes(LeaseSpanMinutes) - now;
+                var ts = GetStartTime(now).AddSeconds(LeaseSpanSeconds) - now;
                 if (ts.Ticks > 0)
                 {
                     await Task.Delay(ts);
