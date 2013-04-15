@@ -6,21 +6,25 @@ using System.Threading.Tasks;
 
 namespace StorageNode
 {
-    public class ReadTransaction : IDisposable
+    interface IReadTransaction : IDisposable
+    {
+        Task<string> Get(string Key);
+    }
+    public class ReadTransaction : IReadTransaction
     {
         private bool disposed = false;
         private readonly StorageNode node;
-        private readonly DateTime time;
+        private readonly long id;
 
-        internal ReadTransaction(StorageNode Node, DateTime Time)
+        internal ReadTransaction(StorageNode Node, long ID)
         {
             node = Node;
-            time = Time;
+            id = ID;
         }
 
-        public string Get(string key)
+        public Task<string> Get(string Key)
         {
-            return "";
+            return node.Read(id, Key);
         }
 
         public void Dispose()
