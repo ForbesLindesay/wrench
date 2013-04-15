@@ -9,6 +9,7 @@ namespace StorageNode
 {
     public class StorageNode
     {
+        private readonly BackingStore store = new BackingStore();
         private readonly Master master;
 
         private long lastCompletedTransaction = -1;
@@ -22,14 +23,31 @@ namespace StorageNode
             {
                 await WaitForCompletion(TransactionID);
             }
-            //todo: Do Read
-            throw new NotImplementedException();
+            BackingStoreValue storeValue;
+            if (store.TryGetValue(Key, out storeValue))
+            {
+                return storeValue.Get(TransactionID);
+            }
+            return null;
+        }
+        internal async Task<string> Read(long TransactionID, Guid TransactionGUID, string Key)
+        {
+            if (TransactionID > LastCompletedTransaction)
+            {
+                await WaitForCompletion(TransactionID);
+            }
+            BackingStoreValue storeValue;
+            if (store.TryGetValue(Key, out storeValue))
+            {
+                return storeValue.Get(TransactionID, TransactionGUID);
+            }
+            return null;
         }
 
-        internal async Task Write(Guid TransactionID, string Key, string Value)
+        internal void Write(Guid TransactionID, string Key, string Value)
         {
-            //todo: Do Write
-            throw new NotImplementedException();
+            var storeValue = store.GetOrAdd(Key, new BackingStoreValue());
+            storeValue.Set(TransactionID, Value);
         }
 
         public IReadTransaction Reader()
