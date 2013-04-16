@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BackingStore.cs" />
     <Compile Include="LockService.cs" />
     <Compile Include="ReadTransaction.cs" />
     <Compile Include="StorageNode.cs" />
