@@ -16,8 +16,8 @@ namespace StorageNode
     {
         private static readonly JavaScriptSerializer JSON = new JavaScriptSerializer();
 
-        private readonly ConcurrentDictionary<string, bool> AbortedTransactions = new ConcurrentDictionary<string, bool>();
         private readonly AsyncDictionary<string, long> Sequencing = new AsyncDictionary<string, long>();
+        private readonly AsyncDictionary<string, bool> TransactionResults = new AsyncDictionary<string, bool>();
         private readonly AsyncDictionary<string, Dictionary<string, string>> TransactionUpdates = new AsyncDictionary<string, Dictionary<string, string>>();
         private readonly BackingStore store = new BackingStore();
 
@@ -32,7 +32,7 @@ namespace StorageNode
             address = Guid.NewGuid().ToString();
 
             paxos.RoundComplete += paxos_RoundComplete;
-            AbortedTransactions.TryAdd("SKIP", true);
+            TransactionResults.TrySet("SKIP", false);
 
             TransactionUpdates.KeyRequested += TransactionUpdates_KeyRequested;
         }
@@ -44,6 +44,7 @@ namespace StorageNode
 
         #region Paxos Handler
 
+        private int pendingTransactions = 0;
         async void paxos_RoundComplete(object sender, RoundResult e)
         {
             long sequenceNumber;
@@ -51,26 +52,33 @@ namespace StorageNode
             {
                 SequencedTransactionID.AutoIncrementOn(sequenceNumber);
                 Sequencing.TrySet(e.Result, sequenceNumber);
-                if (AbortedTransactions.ContainsKey(e.Result))
+                pendingTransactions++;
+                var committed = await TransactionResults.Get(e.Result);
+                pendingTransactions--;
+                if (committed)
                 {
-                    OnTransactionSkip(sequenceNumber);
+                    OnTransactionCommited(sequenceNumber, e.Result);
+                }
+                else
+                {
+                    CompletedTransactionID.AutoIncrementOn(sequenceNumber);
                 }
             }
             else
             {
                 if (e.Result == "COMMIT")
                 {
-                    OnTransactionCommited(await Sequencing.Get(e.RoundID), e.RoundID);
+                    TransactionResults.TrySet(e.RoundID, true);
                 }
                 else
                 {
-                    AbortedTransactions.TryAdd(e.RoundID, true);
-                    OnTransactionAborted(e.RoundID);
-                    var sn = Sequencing.Get(e.RoundID);
-                    if (sn.IsCompleted)
-                    {
-                        OnTransactionSkip(await sn);
-                    }
+                    TransactionUpdates.Dispose(e.RoundID);
+                    TransactionResults.TrySet(e.RoundID, false);
+                }
+                if (pendingTransactions == 0)
+                {
+                    //check we're not behind on sequence numbers
+                    SendMessage("SequenceNumber", SequencedTransactionID.Current().ToString());
                 }
             }
         }
@@ -84,15 +92,6 @@ namespace StorageNode
                 store.Set(SequenceNumber, pair.Key, pair.Value);
             }
             CompletedTransactionID.Increment();
-        }
-        private void OnTransactionAborted(string TransactionID)
-        {
-            TransactionUpdates.TryCancel(TransactionID);
-            TransactionUpdates.Dispose(TransactionID);
-        }
-        private void OnTransactionSkip(long SequenceNumber)
-        {
-            CompletedTransactionID.AutoIncrementOn(SequenceNumber);
         }
 
         #endregion
