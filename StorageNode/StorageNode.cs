@@ -19,6 +19,7 @@ namespace StorageNode
         private readonly AsyncDictionary<string, long> Sequencing = new AsyncDictionary<string, long>();
         private readonly AsyncDictionary<string, bool> TransactionResults = new AsyncDictionary<string, bool>();
         private readonly AsyncDictionary<string, Dictionary<string, string>> TransactionUpdates = new AsyncDictionary<string, Dictionary<string, string>>();
+        private readonly ConcurrentDictionary<string, AsyncSet<string>> TransactionDistribution = new ConcurrentDictionary<string, AsyncSet<string>>();
         private readonly BackingStore store = new BackingStore();
 
         private readonly string address;
@@ -27,14 +28,17 @@ namespace StorageNode
         private readonly AsyncCounter CompletedTransactionID = new AsyncCounter(-1);
         private readonly AsyncCounter SequencedTransactionID = new AsyncCounter(-1);
 
-        public StorageNode()
+        public StorageNode(int NodeCount)
         {
             address = Guid.NewGuid().ToString();
+            paxos = new PaxosNode(address, NodeCount);
 
             paxos.RoundComplete += paxos_RoundComplete;
             TransactionResults.TrySet("SKIP", false);
 
             TransactionUpdates.KeyRequested += TransactionUpdates_KeyRequested;
+
+            paxos.Message += (s, m) => SendMessage("paxos", m);
         }
 
         void TransactionUpdates_KeyRequested(object sender, string key)
@@ -106,6 +110,9 @@ namespace StorageNode
             Dictionary<string, string> updates;
             switch (method)
             {
+                case "paxos":
+                    paxos.OnMessage(payload);
+                    break;
                 case "RequestResults":
                     if (TransactionUpdates.TryGet(payload, out updates))
                     {
@@ -127,6 +134,14 @@ namespace StorageNode
                                 Address = address,
                                 TransactionID = tr.TransactionID
                             }));
+                    }
+                    break;
+                case "GotResults":
+                    var tc = JSON.Deserialize<TransactionConfirmation>(payload);
+                    AsyncSet<string> distribution;
+                    if (TransactionDistribution.TryGetValue(tc.TransactionID, out distribution))
+                    {
+                        distribution.Add(tc.Address);
                     }
                     break;
                 case "SequenceNumber":
@@ -207,13 +222,17 @@ namespace StorageNode
 			    //todo: check for conflicts and abort if conflicts
 			}
 
-            //todo: distribute the contents of the transactions updates
+            // distribute the contents of the transactions updates
+            var distribution = TransactionDistribution.GetOrAdd(WriteTransactionID.transactionID, new AsyncSet<string>());
+            TransactionUpdates.TrySet(WriteTransactionID.transactionID, Updated);
+            distribution.Add(address);
             SendMessage("Results", JSON.Serialize(new TransactionResults()
             {
                 Initial = true,
                 TransactionID = WriteTransactionID.transactionID,
                 Updated = Updated
             }));
+            await distribution.Wait((int)Math.Ceiling(paxos.NumberOfNodes / 2D));
 
             if ("COMMIT" == await paxos.Propose(WriteTransactionID.transactionID, "COMMIT"))
             {
