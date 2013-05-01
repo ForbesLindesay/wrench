@@ -12,7 +12,7 @@ namespace StorageConnection
         Task<string> Read(ReadID ReadTransactionID, string Key);
 
         Task<WriteID> BeginWriteTransaction(string[] Keys);
-        Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated);
+        Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated, string[] Read);
         Task Abort(WriteID WriteTransactionID);
     }
 }

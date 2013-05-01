@@ -15,6 +15,7 @@ namespace StorageConnection
         public string key;
         public string[] keys;
         public Dictionary<string, string> updated;
+        public string[] read;
 
 
         public const string BeginReadTransaction = "BeginReadTransaction";

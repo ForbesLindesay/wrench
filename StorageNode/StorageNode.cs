@@ -16,7 +16,7 @@ namespace StorageNode
     {
         private static readonly JavaScriptSerializer JSON = new JavaScriptSerializer();
 
-        private readonly AsyncDictionary<string, long> Sequencing = new AsyncDictionary<string, long>();
+        private readonly AsyncDictionary<long, string> Sequencing = new AsyncDictionary<long, string>();
         private readonly AsyncDictionary<string, bool> TransactionResults = new AsyncDictionary<string, bool>();
         private readonly AsyncDictionary<string, Dictionary<string, string>> TransactionUpdates = new AsyncDictionary<string, Dictionary<string, string>>();
         private readonly ConcurrentDictionary<string, AsyncSet<string>> TransactionDistribution = new ConcurrentDictionary<string, AsyncSet<string>>();
@@ -55,7 +55,7 @@ namespace StorageNode
             if (long.TryParse(e.RoundID, out sequenceNumber))
             {
                 SequencedTransactionID.AutoIncrementOn(sequenceNumber);
-                Sequencing.TrySet(e.Result, sequenceNumber);
+                Sequencing.TrySet(sequenceNumber, e.Result);
                 pendingTransactions++;
                 var committed = await TransactionResults.Get(e.Result);
                 pendingTransactions--;
@@ -205,7 +205,7 @@ namespace StorageNode
             });
         }
 
-        public async Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated)
+        public async Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated, String[] Read)
         {
             //obtain a sequence number
             long startSequenceNumber = WriteTransactionID.sequenceNumber;
@@ -217,9 +217,22 @@ namespace StorageNode
                 id = await paxos.Propose(endSequenceNumber.ToString(), WriteTransactionID.transactionID);
             }
 
-            for (int i = 0; i < endSequenceNumber; i++)
+            for (long i = startSequenceNumber; i < endSequenceNumber; i++)
 			{
-			    //todo: check for conflicts and abort if conflicts
+                var tid = await Sequencing.Get(i);
+                var updates = await TransactionUpdates.Get(tid);
+                var updated = updates.Keys;
+                var read = new HashSet<string>(Read);
+                foreach (var key in updated)
+                {
+                    if (read.Contains(key))
+                    {
+                        //if we read a key that another transaction wrote, and we missed that write, we need to abort
+                        await Abort(WriteTransactionID);
+                        throw new Exception("Transaction aborted due to conflict.");
+                    }
+
+                }
 			}
 
             // distribute the contents of the transactions updates

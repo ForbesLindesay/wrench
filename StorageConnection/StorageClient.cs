@@ -49,13 +49,14 @@ namespace StorageConnection
             });
         }
 
-        public Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated)
+        public Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
         {
             return request(new NetworkRequest()
             {
                 method = NetworkRequest.Commit,
                 writeTransactionID = WriteTransactionID,
-                updated = Updated
+                updated = Updated,
+                read = Read
             });
         }
 

@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="AsyncCounter.cs" />
     <Compile Include="AsyncDictionary.cs" />
+    <Compile Include="AsyncSet.cs" />
     <Compile Include="BackingStore.cs" />
     <Compile Include="LockService.cs" />
     <Compile Include="StorageNode.cs" />

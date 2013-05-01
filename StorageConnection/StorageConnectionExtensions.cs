@@ -20,10 +20,10 @@ namespace StorageConnection
                 .Then((WriteID) => Node.Read(WriteID, Key))
                 .Unwrap();
         }
-        public static Task Commit(this IStorageNode Node, Task<WriteID> WriteTransactionID, Dictionary<string, string> Updated)
+        public static Task Commit(this IStorageNode Node, Task<WriteID> WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
         {
             return WriteTransactionID
-                .Then((WriteID) => Node.Commit(WriteID, Updated))
+                .Then((WriteID) => Node.Commit(WriteID, Updated, Read))
                 .Unwrap();
         }
         public static Task Abort(this IStorageNode Node, Task<WriteID> WriteTransactionID)

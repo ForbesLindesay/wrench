@@ -22,7 +22,7 @@ namespace StorageConnection
                 case NetworkRequest.BeginWriteTransaction:
                     return Node.BeginWriteTransaction(req.keys).Then(JSON.Serialize);
                 case NetworkRequest.Commit:
-                    return Node.Commit(req.writeTransactionID, req.updated).Then(() => "null");
+                    return Node.Commit(req.writeTransactionID, req.updated, req.read).Then(() => "null");
                 case NetworkRequest.Abort:
                     return Node.Abort(req.writeTransactionID).Then(() => "null");
                 default:

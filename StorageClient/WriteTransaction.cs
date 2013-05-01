@@ -14,6 +14,7 @@ namespace StorageClient
         private readonly Task<WriteID> id;
         private readonly HashSet<string> keys;
         private readonly Dictionary<string, string> updated = new Dictionary<string, string>();
+        private readonly HashSet<string> read = new HashSet<string>();
 
         public WriteTransaction(IStorageNode Node, string[] Keys)
         {
@@ -24,6 +25,7 @@ namespace StorageClient
 
         public async Task<string> Read(string Key)
         {
+            read.Add(Key);
             if (!keys.Contains(Key)) throw new KeyNotInTransactionException(Key);
             if (updated.ContainsKey(Key))
             {
@@ -43,7 +45,7 @@ namespace StorageClient
         public Task Commit()
         {
             settled = true;
-            return node.Commit(id, updated);
+            return node.Commit(id, updated, read.ToArray());
         }
 
         public Task Abort()
