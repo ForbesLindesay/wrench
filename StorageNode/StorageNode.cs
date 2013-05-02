@@ -35,6 +35,7 @@ namespace StorageNode
 
             paxos.RoundComplete += paxos_RoundComplete;
             TransactionResults.TrySet("SKIP", false);
+            Sequencing.TrySet(-1, "SKIP");
 
             TransactionUpdates.KeyRequested += TransactionUpdates_KeyRequested;
 
@@ -166,8 +167,14 @@ namespace StorageNode
         {
             if (Method.Contains(':')) throw new ArgumentException("Method can't contain `:`");
             var message = Method + ":" + Payload;
+            var handler = Message;
+            if (handler != null)
+            {
+                handler(this, message);
+            }
         }
 
+        public event EventHandler<string> Message;
         #endregion
 
         #region Read Only Transactions
@@ -217,21 +224,24 @@ namespace StorageNode
                 id = await paxos.Propose(endSequenceNumber.ToString(), WriteTransactionID.transactionID);
             }
 
-            for (long i = startSequenceNumber; i < endSequenceNumber; i++)
+            for (long i = startSequenceNumber + 1; i < endSequenceNumber; i++)
 			{
                 var tid = await Sequencing.Get(i);
-                var updates = await TransactionUpdates.Get(tid);
-                var updated = updates.Keys;
-                var read = new HashSet<string>(Read);
-                foreach (var key in updated)
+                if (tid != "SKIP")
                 {
-                    if (read.Contains(key))
+                    var updates = await TransactionUpdates.Get(tid);
+                    var updated = updates.Keys;
+                    var read = new HashSet<string>(Read);
+                    foreach (var key in updated)
                     {
-                        //if we read a key that another transaction wrote, and we missed that write, we need to abort
-                        await Abort(WriteTransactionID);
-                        throw new Exception("Transaction aborted due to conflict.");
-                    }
+                        if (read.Contains(key))
+                        {
+                            //if we read a key that another transaction wrote, and we missed that write, we need to abort
+                            await Abort(WriteTransactionID);
+                            throw new Exception("Transaction aborted due to conflict.");
+                        }
 
+                    }
                 }
 			}
 
