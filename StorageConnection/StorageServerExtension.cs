@@ -15,16 +15,12 @@ namespace StorageConnection
             var req = JSON.Deserialize<NetworkRequest>(Request);
             switch (req.method)
             {
-                case NetworkRequest.BeginReadTransaction:
-                    return Node.BeginReadTransaction().Then(JSON.Serialize);
+                case NetworkRequest.BeginTransaction:
+                    return Node.BeginTransaction().Then(n => n.ToString());
                 case NetworkRequest.Read:
-                    return Node.Read(req.readTransactionID, req.key).Then(JSON.Serialize);
-                case NetworkRequest.BeginWriteTransaction:
-                    return Node.BeginWriteTransaction(req.keys).Then(JSON.Serialize);
+                    return Node.Read(req.transactionID, req.key).Then(JSON.Serialize);
                 case NetworkRequest.Commit:
-                    return Node.Commit(req.writeTransactionID, req.updated, req.read).Then(() => "null");
-                case NetworkRequest.Abort:
-                    return Node.Abort(req.writeTransactionID).Then(() => "null");
+                    return Node.Commit(req.transactionID, req.updated, req.read).Then(() => "null");
                 default:
                     throw new NotImplementedException("The method " + req.method + " was not recognised.");
             }

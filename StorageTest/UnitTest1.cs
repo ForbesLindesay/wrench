@@ -15,7 +15,7 @@ namespace StorageTest
         public async Task NonConflict()
         {
             var client = new Client(Cluster(5));
-            using (var t = client.BeginWriteTransaction("foo", "bar"))
+            using (var t = client.BeginWriteTransaction())
             {
                 await t.Write("foo", "bing");
                 await t.Write("bar", "bing");
@@ -25,7 +25,7 @@ namespace StorageTest
             using (var t = client.BeginReadTransaction())
             {
                 Assert.AreEqual("bing", await t.Read("foo"));
-                using (var w = client.BeginWriteTransaction("foo", "bar"))
+                using (var w = client.BeginWriteTransaction())
                 {
                     await w.Write("foo", "baz");
                     await w.Write("bar", "baz");
@@ -41,9 +41,9 @@ namespace StorageTest
         {
             var client = new Client(Cluster(5));
             var aborted = false;
-            using (var t1 = client.BeginWriteTransaction("foo"))
+            using (var t1 = client.BeginWriteTransaction())
             {
-                using (var t2 = client.BeginWriteTransaction("foo"))
+                using (var t2 = client.BeginWriteTransaction())
                 {
                     await t1.Write("foo", "bar");
                     await t2.Write("foo", await t2.Read("foo") + "baz");

@@ -27,7 +27,7 @@ namespace StorageClient
         }
         public async Task Write(string Key, string Value)
         {
-            using (var transaction = BeginWriteTransaction(Key))
+            using (var transaction = BeginWriteTransaction())
             {
                 await transaction.Write(Key, Value);
                 await transaction.Commit();
@@ -37,9 +37,9 @@ namespace StorageClient
         {
             return new ReadTransaction(node);
         }
-        public IWriteTransaction BeginWriteTransaction(params string[] Keys)
+        public IWriteTransaction BeginWriteTransaction()
         {
-            return new WriteTransaction(node, Keys);
+            return new WriteTransaction(node);
         }
     }
 }

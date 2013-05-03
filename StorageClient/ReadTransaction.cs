@@ -10,12 +10,12 @@ namespace StorageClient
     class ReadTransaction : IReadTransaction
     {
         private readonly IStorageNode node;
-        private readonly Task<ReadID> id;
+        private readonly Task<long> id;
 
         public ReadTransaction(IStorageNode Node)
         {
             node = Node;
-            id = Node.BeginReadTransaction();
+            id = Node.BeginTransaction();
         }
 
         public Task<string> Read(string Key)

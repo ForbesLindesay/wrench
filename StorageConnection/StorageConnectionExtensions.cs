@@ -8,28 +8,16 @@ namespace StorageConnection
 {
     public static class StorageConnectionExtensions
     {
-        public static Task<string> Read(this IStorageNode Node, Task<ReadID> ReadTransactionID, string Key)
+        public static Task<string> Read(this IStorageNode Node, Task<long> TransactionID, string Key)
         {
-            return ReadTransactionID
+            return TransactionID
                 .Then((ReadID) => Node.Read(ReadID, Key))
                 .Unwrap();
         }
-        public static Task<string> Read(this IStorageNode Node, Task<WriteID> WriteTransactionID, string Key)
+        public static Task Commit(this IStorageNode Node, Task<long> TransactionID, Dictionary<string, string> Updated, string[] Read)
         {
-            return WriteTransactionID
-                .Then((WriteID) => Node.Read(WriteID, Key))
-                .Unwrap();
-        }
-        public static Task Commit(this IStorageNode Node, Task<WriteID> WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
-        {
-            return WriteTransactionID
+            return TransactionID
                 .Then((WriteID) => Node.Commit(WriteID, Updated, Read))
-                .Unwrap();
-        }
-        public static Task Abort(this IStorageNode Node, Task<WriteID> WriteTransactionID)
-        {
-            return WriteTransactionID
-                .Then((WriteID) => Node.Abort(WriteID))
                 .Unwrap();
         }
     }

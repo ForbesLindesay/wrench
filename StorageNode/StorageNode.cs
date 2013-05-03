@@ -179,17 +179,14 @@ namespace StorageNode
 
         #region Read Only Transactions
 
-        public Task<ReadID> BeginReadTransaction()
+        public Task<long> BeginTransaction()
         {
             //always assume just start from the latest committed transaction
-            return Task.FromResult(new ReadID() { sequenceNumber = CompletedTransactionID.Current() });
+            return Task.FromResult(CompletedTransactionID.Current());
         }
 
-        public async Task<string> Read(ReadID ReadTransactionID, string Key)
+        public async Task<string> Read(long SequenceNumber, string Key)
         {
-            //Read at a point in time
-            var SequenceNumber = ReadTransactionID.sequenceNumber;
-
             //wait for transaction to complete
             await CompletedTransactionID.Wait(SequenceNumber);
 
@@ -201,30 +198,19 @@ namespace StorageNode
 
         #region Write Transactions
 
-        public Task<WriteID> BeginWriteTransaction(string[] Keys)
+        public async Task Commit(long StartSequenceNumber, Dictionary<string, string> Updated, String[] Read)
         {
-            var lastCommitted = CompletedTransactionID.Current();
-            var transactionID = Guid.NewGuid();
-            return Task.FromResult(new WriteID()
-            {
-                sequenceNumber = lastCommitted,
-                transactionID = transactionID.ToString()
-            });
-        }
-
-        public async Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated, String[] Read)
-        {
+            var transactionID = Guid.NewGuid().ToString();
             //obtain a sequence number
-            long startSequenceNumber = WriteTransactionID.sequenceNumber;
             long endSequenceNumber = -1;
             string id = null;
-            while (id != WriteTransactionID.transactionID)
+            while (id != transactionID)
             {
                 endSequenceNumber = SequencedTransactionID.Increment();
-                id = await paxos.Propose(endSequenceNumber.ToString(), WriteTransactionID.transactionID);
+                id = await paxos.Propose(endSequenceNumber.ToString(), transactionID);
             }
 
-            for (long i = startSequenceNumber + 1; i < endSequenceNumber; i++)
+            for (long i = StartSequenceNumber + 1; i < endSequenceNumber; i++)
 			{
                 var tid = await Sequencing.Get(i);
                 if (tid != "SKIP")
@@ -237,7 +223,7 @@ namespace StorageNode
                         if (read.Contains(key))
                         {
                             //if we read a key that another transaction wrote, and we missed that write, we need to abort
-                            await Abort(WriteTransactionID);
+                            await paxos.Propose(transactionID, "ABORT");
                             throw new Exception("Transaction aborted due to conflict.");
                         }
 
@@ -246,18 +232,18 @@ namespace StorageNode
 			}
 
             // distribute the contents of the transactions updates
-            var distribution = TransactionDistribution.GetOrAdd(WriteTransactionID.transactionID, new AsyncSet<string>());
-            TransactionUpdates.TrySet(WriteTransactionID.transactionID, Updated);
+            var distribution = TransactionDistribution.GetOrAdd(transactionID, new AsyncSet<string>());
+            TransactionUpdates.TrySet(transactionID, Updated);
             distribution.Add(address);
             SendMessage("Results", JSON.Serialize(new TransactionResults()
             {
                 Initial = true,
-                TransactionID = WriteTransactionID.transactionID,
+                TransactionID = transactionID,
                 Updated = Updated
             }));
             await distribution.Wait((int)Math.Ceiling(paxos.NumberOfNodes / 2D));
 
-            if ("COMMIT" == await paxos.Propose(WriteTransactionID.transactionID, "COMMIT"))
+            if ("COMMIT" == await paxos.Propose(transactionID, "COMMIT"))
             {
                 //wait for the transactions results to propagate back to here
                 await CompletedTransactionID.Wait(endSequenceNumber);
@@ -267,19 +253,6 @@ namespace StorageNode
                 throw new Exception("Transaction failed to commit as it was already aborted.");
             }
         }
-
-        public async Task Abort(WriteID WriteTransactionID)
-        {
-            if ("ABORT" == await paxos.Propose(WriteTransactionID.transactionID, "ABORT"))
-            {
-                return; //success
-            }
-            else
-            {
-                throw new Exception("Transaction failed to abort as it was already committed.");
-            }
-        }
-
         #endregion
 
 

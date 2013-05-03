@@ -25,47 +25,29 @@ namespace StorageConnection
             return makeRequest(JSON.Serialize(req)).Then(JSON.Deserialize<T>);
         }
 
-        public Task<ReadID> BeginReadTransaction()
+        public Task<long> BeginTransaction()
         {
-            return request<ReadID>(new NetworkRequest() { method = NetworkRequest.BeginReadTransaction });
+            return request<long>(new NetworkRequest() { method = NetworkRequest.BeginTransaction });
         }
 
-        public Task<string> Read(ReadID ReadTransactionID, string Key)
+        public Task<string> Read(long ReadTransactionID, string Key)
         {
             return request<string>(new NetworkRequest()
             {
                 method = NetworkRequest.Read,
-                readTransactionID = ReadTransactionID,
+                transactionID = ReadTransactionID,
                 key = Key
             });
         }
 
-        public Task<WriteID> BeginWriteTransaction(string[] Keys)
-        {
-            return request<WriteID>(new NetworkRequest()
-            {
-                method = NetworkRequest.BeginWriteTransaction,
-                keys = Keys
-            });
-        }
-
-        public Task Commit(WriteID WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
+        public Task Commit(long WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
         {
             return request(new NetworkRequest()
             {
                 method = NetworkRequest.Commit,
-                writeTransactionID = WriteTransactionID,
+                transactionID = WriteTransactionID,
                 updated = Updated,
                 read = Read
-            });
-        }
-
-        public Task Abort(WriteID WriteTransactionID)
-        {
-            return request(new NetworkRequest()
-            {
-                method = NetworkRequest.Abort,
-                writeTransactionID = WriteTransactionID
             });
         }
     }

@@ -44,11 +44,9 @@
     <Compile Include="IStorageNode.cs" />
     <Compile Include="NetworkRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReadID.cs" />
     <Compile Include="StorageClient.cs" />
     <Compile Include="StorageConnectionExtensions.cs" />
     <Compile Include="StorageServerExtension.cs" />
-    <Compile Include="WriteID.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

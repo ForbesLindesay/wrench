@@ -10,6 +10,5 @@ namespace StorageClient
     {
         Task Write(string Key, string Value);
         Task Commit();
-        Task Abort();
     }
 }

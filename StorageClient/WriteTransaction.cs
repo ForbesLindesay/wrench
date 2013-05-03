@@ -9,24 +9,20 @@ namespace StorageClient
 {
     class WriteTransaction : IWriteTransaction
     {
-        private bool settled = false;
         private readonly IStorageNode node;
-        private readonly Task<WriteID> id;
-        private readonly HashSet<string> keys;
+        private readonly Task<long> id;
         private readonly Dictionary<string, string> updated = new Dictionary<string, string>();
         private readonly HashSet<string> read = new HashSet<string>();
 
-        public WriteTransaction(IStorageNode Node, string[] Keys)
+        public WriteTransaction(IStorageNode Node)
         {
             node = Node;
-            id = node.BeginWriteTransaction(Keys);
-            keys = new HashSet<string>(Keys);
+            id = node.BeginTransaction();
         }
 
         public async Task<string> Read(string Key)
         {
             read.Add(Key);
-            if (!keys.Contains(Key)) throw new KeyNotInTransactionException(Key);
             if (updated.ContainsKey(Key))
             {
                 return updated[Key];
@@ -36,7 +32,6 @@ namespace StorageClient
 
         public async Task Write(string Key, string Value)
         {
-            if (!keys.Contains(Key)) throw new KeyNotInTransactionException(Key);
             updated[Key] = Value;
             await Task.Yield();
         }
@@ -44,28 +39,12 @@ namespace StorageClient
 
         public Task Commit()
         {
-            settled = true;
             return node.Commit(id, updated, read.ToArray());
-        }
-
-        public Task Abort()
-        {
-            settled = true;
-            return node.Abort(id);
         }
 
         public void Dispose()
         {
-            if (!settled) Abort().Wait();
+            //noop
         }
-    }
-
-    public class KeyNotInTransactionException : Exception
-    {
-        internal KeyNotInTransactionException(string Key)
-            : base("You attempted to access the key " + Key + " but it was not in the transaction")
-        {
-        }
-
     }
 }

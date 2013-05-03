@@ -10,19 +10,16 @@ namespace StorageConnection
     public class NetworkRequest
     {
         public string method;
-        public ReadID readTransactionID;
-        public WriteID writeTransactionID;
+        public long transactionID;
         public string key;
         public string[] keys;
         public Dictionary<string, string> updated;
         public string[] read;
 
 
-        public const string BeginReadTransaction = "BeginReadTransaction";
+        public const string BeginTransaction = "BeginTransaction";
         public const string Read = "Read";
-        public const string BeginWriteTransaction = "BeginWriteTransaction";
         public const string Commit = "Commit";
-        public const string Abort = "Abort";
 
     }
 }
