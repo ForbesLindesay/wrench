@@ -41,5 +41,25 @@ namespace StorageClient
         {
             return new WriteTransaction(node);
         }
+        public async Task Transact(Func<IWriteTransaction, Task> Fn)
+        {
+            var ran = false;
+            while (!ran)
+            {
+                try
+                {
+                    using (var transaction = BeginWriteTransaction())
+                    {
+                        await Fn(transaction);
+                        await transaction.Commit();
+                        ran = true;
+                    }
+                }
+                catch (Exception)
+                {
+                    ran = false;//run it again
+                }
+            }
+        }
     }
 }
