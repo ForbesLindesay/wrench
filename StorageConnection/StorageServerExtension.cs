@@ -20,7 +20,7 @@ namespace StorageConnection
                 case NetworkRequest.Read:
                     return Node.Read(req.transactionID, req.key).Then(JSON.Serialize);
                 case NetworkRequest.Commit:
-                    return Node.Commit(req.transactionID, req.updated, req.read).Then(() => "null");
+                    return Node.Commit(req.transactionID, req.updated, req.read).Then((n) => n.ToString());
                 default:
                     throw new NotImplementedException("The method " + req.method + " was not recognised.");
             }

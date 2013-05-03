@@ -11,6 +11,6 @@ namespace StorageConnection
         Task<long> BeginTransaction();
         Task<string> Read(long TransactionID, string Key);
 
-        Task Commit(long TransactionID, Dictionary<string, string> Updated, string[] Read);
+        Task<long> Commit(long TransactionID, Dictionary<string, string> Updated, string[] Read);
     }
 }

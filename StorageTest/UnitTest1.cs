@@ -21,7 +21,6 @@ namespace StorageTest
                 await t.Write("bar", "bing");
                 await t.Commit();
             }
-            await Task.Delay(500);//allow for propogatation
             using (var t = client.BeginReadTransaction())
             {
                 Assert.AreEqual("bing", await t.Read("foo"));
@@ -58,13 +57,14 @@ namespace StorageTest
                     }
                 }
             }
-            await Task.Delay(500);//allow for propogatation
             using (var t = client.BeginReadTransaction())
             {
                 Assert.IsTrue(aborted);
                 Assert.AreEqual("bar", await t.Read("foo"));
             }
         }
+
+
 
         private Func<string, Task<string>> Cluster(int size)
         {

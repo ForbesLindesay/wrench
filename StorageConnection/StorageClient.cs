@@ -16,10 +16,6 @@ namespace StorageConnection
             makeRequest = Request;
         }
 
-        private Task request(NetworkRequest req)
-        {
-            return makeRequest(JSON.Serialize(req));
-        }
         private Task<T> request<T>(NetworkRequest req)
         {
             return makeRequest(JSON.Serialize(req)).Then(JSON.Deserialize<T>);
@@ -40,9 +36,9 @@ namespace StorageConnection
             });
         }
 
-        public Task Commit(long WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
+        public Task<long> Commit(long WriteTransactionID, Dictionary<string, string> Updated, string[] Read)
         {
-            return request(new NetworkRequest()
+            return request<long>(new NetworkRequest()
             {
                 method = NetworkRequest.Commit,
                 transactionID = WriteTransactionID,

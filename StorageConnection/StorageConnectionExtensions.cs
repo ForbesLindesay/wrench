@@ -14,7 +14,7 @@ namespace StorageConnection
                 .Then((ReadID) => Node.Read(ReadID, Key))
                 .Unwrap();
         }
-        public static Task Commit(this IStorageNode Node, Task<long> TransactionID, Dictionary<string, string> Updated, string[] Read)
+        public static Task<long> Commit(this IStorageNode Node, Task<long> TransactionID, Dictionary<string, string> Updated, string[] Read)
         {
             return TransactionID
                 .Then((WriteID) => Node.Commit(WriteID, Updated, Read))

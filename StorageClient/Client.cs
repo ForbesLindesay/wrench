@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StorageClient
@@ -11,11 +12,18 @@ namespace StorageClient
     public class Client
     {
         private readonly IStorageNode node;
+        private readonly Object locker = new Object();
+        private long sequenceNumber = -1;
 
         public Client(Func<string, Task<string>> Request) : this(new StorageConnection.StorageClient(Request)) { }
         public Client(IStorageNode Node)
         {
             node = Node;
+        }
+
+        private void UpdateSequenceNumber(long n)
+        {
+            Interlocked.Exchange(ref sequenceNumber, n);
         }
 
         public Task<string> Read(string Key)
@@ -35,11 +43,11 @@ namespace StorageClient
         }
         public IReadTransaction BeginReadTransaction()
         {
-            return new ReadTransaction(node);
+            return new ReadTransaction(node, Interlocked.Read(ref sequenceNumber), UpdateSequenceNumber);
         }
         public IWriteTransaction BeginWriteTransaction()
         {
-            return new WriteTransaction(node);
+            return new WriteTransaction(node, Interlocked.Read(ref sequenceNumber), UpdateSequenceNumber);
         }
         public async Task Transact(Func<IWriteTransaction, Task> Fn)
         {

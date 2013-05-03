@@ -13,11 +13,18 @@ namespace StorageClient
         private readonly Task<long> id;
         private readonly Dictionary<string, string> updated = new Dictionary<string, string>();
         private readonly HashSet<string> read = new HashSet<string>();
+        private readonly Action<long> updateSequenceNumber;
 
-        public WriteTransaction(IStorageNode Node)
+        public WriteTransaction(IStorageNode Node, long MinSequenceNumber, Action<long> UpdateSequenceNumber)
         {
             node = Node;
-            id = node.BeginTransaction();
+            id = node.BeginTransaction()
+                 .Then(n =>
+                     {
+                         if (n > MinSequenceNumber) UpdateSequenceNumber(n);
+                         return Math.Max(n, MinSequenceNumber);
+                     });
+            updateSequenceNumber = UpdateSequenceNumber;
         }
 
         public async Task<string> Read(string Key)
@@ -39,7 +46,12 @@ namespace StorageClient
 
         public Task Commit()
         {
-            return node.Commit(id, updated, read.ToArray());
+            return node.Commit(id, updated, read.ToArray())
+                .Then(n =>
+                {
+                    updateSequenceNumber(n);
+                    return true;
+                });
         }
 
         public void Dispose()

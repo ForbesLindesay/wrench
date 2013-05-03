@@ -12,10 +12,15 @@ namespace StorageClient
         private readonly IStorageNode node;
         private readonly Task<long> id;
 
-        public ReadTransaction(IStorageNode Node)
+        public ReadTransaction(IStorageNode Node, long MinSequenceNumber, Action<long> UpdateSequenceNumber)
         {
             node = Node;
-            id = Node.BeginTransaction();
+            id = Node.BeginTransaction()
+                 .Then(n =>
+                 {
+                     if (n > MinSequenceNumber) UpdateSequenceNumber(n);
+                     return Math.Max(n, MinSequenceNumber);
+                 });
         }
 
         public Task<string> Read(string Key)

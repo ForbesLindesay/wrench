@@ -198,7 +198,7 @@ namespace StorageNode
 
         #region Write Transactions
 
-        public async Task Commit(long StartSequenceNumber, Dictionary<string, string> Updated, String[] Read)
+        public async Task<long> Commit(long StartSequenceNumber, Dictionary<string, string> Updated, String[] Read)
         {
             var transactionID = Guid.NewGuid().ToString();
             //obtain a sequence number
@@ -247,6 +247,7 @@ namespace StorageNode
             {
                 //wait for the transactions results to propagate back to here
                 await CompletedTransactionID.Wait(endSequenceNumber);
+                return endSequenceNumber;
             }
             else
             {
