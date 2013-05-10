@@ -38,8 +38,8 @@ namespace Paxos
             numberOfNodes = NumberOfNodes;
 
             proposer = new Proposer(Address, NumberOfNodes);
-            acceptor = new Acceptor(Address);
             learner = new Learner(NumberOfNodes);
+            acceptor = new Acceptor(Address, learner);
             proposer.Pipe(acceptor).Pipe(proposer);
             acceptor.Pipe(learner);
             proposer.Pipe(learner);

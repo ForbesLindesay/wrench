@@ -15,10 +15,12 @@ namespace Paxos
     public class Acceptor : IAcceptor
     {
         private readonly string address;
+        private readonly Learner learner;
 
-        public Acceptor(string Address)
+        public Acceptor(string Address, Learner Learner = null)
         {
             address = Address;
+            learner = Learner;
         }
 
         #region Acceptor
@@ -33,6 +35,11 @@ namespace Paxos
             {
                 if (!rounds.ContainsKey(RoundID)) rounds.Add(RoundID, new Round());
                 Round round = rounds[RoundID];
+                string result;
+                if (learner != null && learner.TryGetResult(RoundID, out result))
+                {
+                    round.AcceptedValue = result;
+                }
 
                 if (sequenceNumber > round.AgreedSequenceNumber)
                 {
@@ -52,6 +59,11 @@ namespace Paxos
             {
                 if (!rounds.ContainsKey(RoundID)) rounds.Add(RoundID, new Round());
                 Round round = rounds[RoundID];
+                string result;
+                if (learner != null && learner.TryGetResult(RoundID, out result))
+                {
+                    round.AcceptedValue = result;
+                }
 
                 if (sequenceNumber == round.AgreedSequenceNumber && (round.AcceptedValue == null || round.AcceptedValue == proposedValue) && proposedValue != null)
                 {
