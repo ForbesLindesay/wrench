@@ -16,18 +16,19 @@ namespace Paxos
         public SequenceNumber SequenceNumber;
         public string Value;
         public string RoundID;
-
+        public Dictionary<string, string> DataSet;
 
         public NetworkMessage()
         {
         }
-        private NetworkMessage(string RoundID, MessageType Type, SequenceNumber SequenceNo, string Value, Guid InResponseTo)
+        private NetworkMessage(string RoundID, MessageType Type, SequenceNumber SequenceNo, string Value, Guid InResponseTo, Dictionary<string, string> DataSet = null)
         {
             this.RoundID = RoundID;
             this.Type = Type;
             this.SequenceNumber = SequenceNo;
             this.Value = Value;
             ReplyID = InResponseTo;
+            this.DataSet = DataSet;
         }
         public override string ToString()
         {
@@ -77,6 +78,14 @@ namespace Paxos
             return new NetworkMessage(RoundID, MessageType.Deny, SequenceNumber, null, MessageID);
         }
 
+        public static NetworkMessage Initialize()
+        {
+            return new NetworkMessage(null, MessageType.Initialize, new SequenceNumber(), null, Guid.Empty);
+        }
+        public NetworkMessage Recover(Dictionary<string, string> DataSet)
+        {
+            return new NetworkMessage(null, MessageType.Recover, new SequenceNumber(), null, this.MessageID, DataSet);
+        }
     }
     public enum MessageType
     {
@@ -85,6 +94,8 @@ namespace Paxos
         Reject,
         Commit,
         Accept,
-        Deny
+        Deny,
+        Initialize,
+        Recover
     }
 }

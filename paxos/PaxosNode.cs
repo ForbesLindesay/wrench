@@ -13,6 +13,11 @@ namespace Paxos
         private readonly Acceptor acceptor;
         private readonly Learner learner;
 
+        private readonly Object locker = new Object();
+       
+        private int InitializeResponses = 0;
+        private readonly TaskCompletionSource<object> Initialized = new TaskCompletionSource<object>();
+
         private readonly string address;
         private int numberOfNodes;  
 
@@ -49,11 +54,47 @@ namespace Paxos
             });
             proposer.Pipe(serializer);
             acceptor.Pipe(serializer);
+
+            Initialize();
         }
 
-        public Task<string> Propose(string Round, string Value)
+        private async void Initialize()
         {
-            return proposer.Propose(Round, Value);
+            if (NumberOfNodes == 1)
+            {
+                Initialized.TrySetResult(null);
+            }
+            else
+            {
+                await Task.Yield();//allow time for handler to be registered
+                var quorum = Math.Floor(NumberOfNodes / 2D) + 1;
+                if (quorum == NumberOfNodes) quorum--;
+                int responses = 0;
+                while (responses < quorum)
+                {
+                    var handler = this.Message;
+                    if (handler != null)
+                    {
+                        var ser = new JavaScriptSerializer();
+                        handler(this, ser.Serialize(new TransportMessage()
+                        {
+                            To = "BROADCAST",
+                            From = Address,
+                            NM = NetworkMessage.Initialize()
+                        }));
+                    }
+                    await Task.Delay(5000);
+                    lock (locker)
+                    {
+                        responses = InitializeResponses;
+                    }
+                }
+            }
+        }
+        public async Task<string> Propose(string Round, string Value)
+        {
+            await Initialized.Task;
+            return await proposer.Propose(Round, Value);
         }
 
 
@@ -74,13 +115,44 @@ namespace Paxos
 
         #region Networking
         public event EventHandler<string> Message;
-        public void OnMessage(string Message)
+        public async void OnMessage(string Message)
         {
             var ser = new JavaScriptSerializer();
             var message = ser.Deserialize<TransportMessage>(Message);
-            proposer.SendMessage(message.To, message.From, message.NM);
-            acceptor.SendMessage(message.To, message.From, message.NM);
-            learner.SendMessage(message.To, message.From, message.NM);
+            if (message.NM.Type == MessageType.Initialize)
+            {
+
+                var handler = this.Message;
+                if (handler != null)
+                {
+                    handler(this, ser.Serialize(new TransportMessage(){
+                        To = message.From,
+                        From = Address,
+                        NM = message.NM.Recover(learner.GetDataSet())
+                    }));
+                }
+            }
+            else if (message.NM.Type == MessageType.Recover)
+            {
+                learner.Recover(message.NM.DataSet);
+                lock (locker)
+                {
+                    InitializeResponses++;
+                    var quorum = Math.Floor(NumberOfNodes / 2D) + 1;
+                    if (quorum == NumberOfNodes) quorum--;
+                    if (InitializeResponses > quorum)
+                    {
+                        Initialized.TrySetResult(null);
+                    }
+                }
+            }
+            else
+            {
+                await Initialized.Task;
+                proposer.SendMessage(message.To, message.From, message.NM);
+                acceptor.SendMessage(message.To, message.From, message.NM);
+                learner.SendMessage(message.To, message.From, message.NM);
+            }
         }
         #endregion
 

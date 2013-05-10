@@ -24,6 +24,18 @@ namespace Paxos
             this.TotalAcceptors = TotalAcceptors;
         }
 
+        public Dictionary<string, string> GetDataSet()
+        {
+            return new Dictionary<string, string>(results);
+        }
+        public void Recover(Dictionary<string, string> DataSet)
+        {
+            foreach (var item in DataSet)
+            {
+                results.TryAdd(item.Key, item.Value);
+            }
+        }
+
         public bool TryGetResult(string RoundID, out string Result)
         {
             return results.TryGetValue(RoundID, out Result);
