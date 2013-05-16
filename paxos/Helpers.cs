@@ -13,7 +13,7 @@ namespace Paxos
             return Task.WhenAny(task, Task.Delay(ms))
                 .ContinueWith<T>((t) =>
                 {
-                    if (!task.IsCompleted)
+                    if (!task.IsCompleted && t != task)
                     {
                         throw new TimeoutException("The task timed out");
                     }

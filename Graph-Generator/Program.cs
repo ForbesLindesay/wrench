@@ -12,7 +12,7 @@ namespace Graph_Generator
     class Program
     {
         private static readonly TextWriter Error = Console.Error;
-        const int NoOfIterations = 20;
+        const int NoOfIterations = 10;
 
         static Func<IReadStream<NetworkMessage>, IReadStream<NetworkMessage>> delay(double milliseconds)
         {
@@ -35,7 +35,7 @@ namespace Graph_Generator
 
         static void Main(string[] args)
         {
-            //QueueResults("Linear Clients", Enumerable.Range(1, 10).Select((i) => testRun(i, i, i, 100, 100, 0)));
+            //QueueResults("Linear Clients", Enumerable.Range(1, 10).Select((i) => testRun(i, i, i, 20, 20, 0)));
             QueueResults("Linear delay", Enumerable.Range(1, 3).SelectMany((n) => Enumerable.Range(1, 4).Select((i) => testRun(n, n, n, 100, 1000 * i, 0))));
             //QueueResults("Linear Drop", Enumerable.Range(3, 4).SelectMany((n) => Enumerable.Range(0, 8).Select((i) => testRun(n, n, n, 10, 10, ((double)i) / 20D))));
             //QueueResults("Dead Proposers", Enumerable.Range(1, 5).Select((i) => testRun(2, 10, 10-i, 100, 100, 0)));
@@ -69,6 +69,7 @@ namespace Graph_Generator
         {
             return new TestRun(proposers, acceptors, liveAcceptors, MinDelay, MaxDelay, Drop).Results();
         }
+
         class TestRun
         {
             public TestRun()
@@ -91,12 +92,12 @@ namespace Graph_Generator
             public double maxDelay;
             public double drop;
 
-            public async Task<TimeSpan> Run()
+            public async Task<List<TimeSpan>> Run()
             {
-                DateTime start = DateTime.Now;
-
+                var results = new List<TimeSpan>();
                 for (var n = 0; n < NoOfIterations; n++)
                 {
+                    DateTime start = DateTime.Now;
                     var proposers = new ConcurrentBag<Proposer>();
                     var acceptors = new ConcurrentBag<Acceptor>();
 
@@ -139,11 +140,12 @@ namespace Graph_Generator
                         if (result != acceptedValue) throw new Exception("The proposers did not all get the same result");
                         if (!proposedValues.Contains(result)) throw new Exception("The accepted Value was never proposed");
                     }
+                    DateTime end = DateTime.Now;
+                    results.Add(end.Subtract(start));
                 }
 
-                DateTime end = DateTime.Now;
 
-                return end.Subtract(start);
+                return results;
             }
 
             public async Task<string> Results()
@@ -151,11 +153,15 @@ namespace Graph_Generator
                 string time;
                 try
                 {
-                    time = ((await Task.Factory.StartNew(() => Run()).Unwrap().Timeout(120000 * NoOfIterations)).TotalMilliseconds / NoOfIterations).ToString();
+                    var runs = (await Task.Factory.StartNew(() => Run()).Unwrap().Timeout(600 * 1000 * NoOfIterations)).Select(span => span.TotalMilliseconds).ToList();
+                    var max = runs.Max();
+                    var min = runs.Min();
+                    var average = runs.Average();
+                    time = "\"" + min + "\",\"" + max + "\",\"" + average + "\"";
                 }
                 catch (TimeoutException)
                 {
-                    time = "Operation Timed Out";
+                    time = "\"Operation Timed Out\"";
                 }
                 catch (AggregateException ex)
                 {
@@ -164,10 +170,10 @@ namespace Graph_Generator
                         Error.WriteLine(e.Message);
                         Error.WriteLine(e.StackTrace);
                     }
-                    time = "Exception";
+                    time = "\"Exception\"";
                 }
                 return ("\"" + Proposers + "\",\"" + Acceptors + "\",\"" + LiveAcceptors + "\",\"" +
-                    minDelay + "\",\"" + maxDelay + "\",\"" + (drop * 100) + "\",\"" + time + "\"");
+                    minDelay + "\",\"" + maxDelay + "\",\"" + (drop * 100) + "\"," + time);
             }
         }
     }
